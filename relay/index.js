@@ -1,6 +1,6 @@
 import { Client } from "tournament-assistant-client";
 import { WebSocket, WebSocketServer } from "ws";
-const TA_URL = "ws://magnesium.checksum.space:2053";// && "ws://tournamentassistant.net:2053";
+const TA_URL = "ws://magnesium.checksum.space:2053"; // && "ws://tournamentassistant.net:2053";
 var port = 2223;
 const wss = new WebSocketServer({ "port": port });
 wss.on('connection', function connection(ws) {
@@ -23,7 +23,8 @@ wss.on('connection', function connection(ws) {
                 console.log("Matches got requested");
                 if (matchArray != null) {
                     ws.send(JSON.stringify({ 'Type': '5', 'message': { matches: matchArray } }));
-                } else {
+                }
+                else {
                     ws.send(JSON.stringify({ 'Type': '5', 'message': "No matches found" }));
                 }
             }
@@ -31,86 +32,39 @@ wss.on('connection', function connection(ws) {
                 console.log("Users got requested");
                 if (usersArray != null) {
                     ws.send(JSON.stringify({ 'Type': '6', 'message': { users: usersArray } }));
-                } else {
+                }
+                else {
                     ws.send(JSON.stringify({ 'Type': '6', 'message': "No users found" }));
                 }
             }
-        } else {
+        }
+        else {
             console.log("Someone tried to pass a non-JSON message to the relay server");
         }
     });
 });
 let ws = new WebSocket("ws://localhost:2223");
-
 setInterval(function () {
     ws.send(JSON.stringify({ 'Type': '1', 'message': 'heartbeat' }));
 }, 29000);
-
 const taWS = new Client("Overlay", {
     url: TA_URL,
     options: { autoReconnect: true, autoReconnectInterval: 1000 }
 });
-
-const debug: boolean = false;
-let usersArray: Array<any> = [];
-let users: Array<any> = [];
-let matchArray: Array<any> = [];
-let matchusers: Array<any> = [];
-let userIds: Array<string> = [""];
-let songData: [string, number] = ["", 0];
-
-
-//New interface
-interface MatchArray {
-    matchData: Array<any>;
-    matchId: Array<any>;
-    coordinator: Coordinator[];
-}
-
-//Create typescript interface for coordinator
-interface Coordinator {
-    name: string;
-    id: string;
-}
-
-interface Player {
-    name: string;
-    type: number;
-    user_id: string;
-    guid: string;
-    stream_delay_ms: number;
-    stream_sync_start_ms: number;
-}
-
-interface Score {
-    user_id: string;
-    score: number;
-    accuracy: number;
-    combo: number;
-    notesMissed: number;
-    badCuts: number;
-    bombHits: number;
-    wallHits: number;
-    maxCombo: number;
-    lhAvg: number[];
-    lhBadCut: number;
-    lhHits: number;
-    lhMiss: number;
-    rhAvg: number[];
-    rhBadCut: number;
-    rhHits: number;
-    rhMiss: number;
-    totalMisses: number;
-}
-
+const debug = false;
+let usersArray = [];
+let users = [];
+let matchArray = [];
+let matchusers = [];
+let userIds = [""];
+let songData = ["", 0];
 taWS.on("packet", p => {
     if (p.has_response && p.response.has_connect) {
         if (p.response.type === 1) {
             console.log(p.response.connect.message);
-
             //For every user found with taWS.Players map them and push them to the users array
             for (let i = 0; i < taWS.Players.length; i++) {
-                const Player = taWS.Players.map((p: any) => {
+                const Player = taWS.Players.map((p) => {
                     return {
                         name: p.name,
                         type: p.client_type,
@@ -118,49 +72,49 @@ taWS.on("packet", p => {
                         guid: p.guid,
                         stream_delay_ms: p.stream_delay_ms,
                         stream_sync_start_ms: p.stream_sync_start_ms
-                    }
+                    };
                 });
                 usersArray.push(Player[i]);
             }
-        } else {
+        }
+        else {
             throw new Error("Connection was not successful");
         }
     }
 });
-
 taWS.on("matchCreated", m => {
     m.data.associated_users.push(taWS.Self.guid);
     taWS.updateMatch(m.data);
-    let coordinatorID: string = m.data.leader;
-    let coordinatorName: string = "";
-
+    let coordinatorID = m.data.leader;
+    let coordinatorName = "";
     for (let i = 0; i < m.data.associated_users.length; i++) {
         if (m.data.associated_users[i] != taWS.Self.guid) {
-            let index = usersArray.findIndex((x: any) => x.guid == m.data.associated_users[i]);
+            let index = usersArray.findIndex((x) => x.guid == m.data.associated_users[i]);
             if (index != -1) {
                 users.push(m.data.associated_users[i]);
             }
         }
     }
-
     if (users.length >= 3 || debug) {
         try {
             for (let i = 0; i < users.length; i++) {
-                let index = usersArray.findIndex((x: any) => x.guid == users[i]);
+                let index = usersArray.findIndex((x) => x.guid == users[i]);
                 console.log("Found user " + usersArray[index].name + " | User Id " + usersArray[index].user_id + " in usersArray");
                 userIds.push(usersArray[index].user_id);
             }
             ws.send(JSON.stringify({ 'Type': '1', 'overlay': 'BattleRoyale', 'userid': userIds, 'order': 1 }));
             taWS.ServerSettings.score_update_frequency = 175;
             userIds = [];
-        } catch (error) {
+        }
+        catch (error) {
             console.error("Error: No user found in UsersArray | Error: " + error);
         }
     }
     if (users.length <= 2 || debug) {
         try {
-            coordinatorName = usersArray.find((u: { guid: string; }) => u.guid === coordinatorID).name || "Unknown";
-        } catch (error) {
+            coordinatorName = usersArray.find((u) => u.guid === coordinatorID).name || "Unknown";
+        }
+        catch (error) {
             coordinatorName = "Unknown";
             coordinatorID = "00000000-0000-0000-0000-000000000000";
         }
@@ -172,10 +126,10 @@ taWS.on("matchCreated", m => {
                     }
                 }
             }
-        } catch (error) {
+        }
+        catch (error) {
             console.error("Error: No user found in UsersArray | Error: " + error);
         }
-
         //Push to matchArray
         matchArray.push({ matchData: { matchId: m.data.guid, coordinator: { name: coordinatorName, id: coordinatorID }, players: matchusers } });
         ws.send(JSON.stringify({ 'Type': '1', 'overlay': '1V1', 'message': { matchData: { matchId: m.data.guid, coordinator: { name: coordinatorName, id: coordinatorID }, players: matchusers } } }));
@@ -183,38 +137,35 @@ taWS.on("matchCreated", m => {
         matchusers = [];
     }
 });
-
 taWS.on("userAdded", u => {
     if (u.data.client_type == 0) {
-        const user: Player = { name: u.data.name, type: u.data.client_type, user_id: u.data.user_id, guid: u.data.guid, stream_delay_ms: u.data.stream_delay_ms, stream_sync_start_ms: u.data.stream_sync_start_ms };
+        const user = { name: u.data.name, type: u.data.client_type, user_id: u.data.user_id, guid: u.data.guid, stream_delay_ms: u.data.stream_delay_ms, stream_sync_start_ms: u.data.stream_sync_start_ms };
         usersArray.push(user);
     }
 });
-
 taWS.on("userUpdated", u => {
     if (u.data.client_type <= 1) {
         try {
-            let index = usersArray.findIndex((x: any) => x.guid == u.data.guid);
+            let index = usersArray.findIndex((x) => x.guid == u.data.guid);
             usersArray[index].stream_delay_ms = u.data.stream_delay_ms;
             usersArray[index].stream_sync_start_ms = u.data.stream_sync_start_ms;
-        } catch (error) {
+        }
+        catch (error) {
             console.log(`Error: User doesn't exist in UsersArray\n${error}`);
         }
     }
 });
-
 taWS.on("userLeft", u => {
     if (u.data.client_type <= 1) {
-        let index = usersArray.findIndex((x: any) => x.guid == u.data.guid);
+        let index = usersArray.findIndex((x) => x.guid == u.data.guid);
         usersArray.splice(index, 1);
     }
 });
-
 taWS.on("realtimeScore", s => {
-    let index = usersArray.findIndex((x: any) => x.guid == s.data.user_guid);
+    let index = usersArray.findIndex((x) => x.guid == s.data.user_guid);
     let user_id = usersArray[index].user_id;
     let sync_delay = usersArray[index].stream_delay_ms;
-    const userScoring: Score = {
+    const userScoring = {
         user_id: user_id,
         score: s.data.score,
         accuracy: s.data.accuracy,
@@ -238,7 +189,6 @@ taWS.on("realtimeScore", s => {
         ws.send(JSON.stringify({ 'Type': '4', 'message': userScoring }));
     }, (sync_delay + 1));
 });
-
 taWS.on("matchUpdated", m => {
     if (typeof m.data.selected_level != "undefined") {
         if (songData[0] != m.data.selected_level.level_id || songData[1] != m.data.selected_difficulty) {
@@ -248,13 +198,11 @@ taWS.on("matchUpdated", m => {
         }
     }
 });
-
 taWS.on('matchDeleted', d => {
-    let index = matchArray.findIndex((x: { matchData: { matchId: string; }; }) => x.matchData.matchId === d.data.guid);
+    let index = matchArray.findIndex((x) => x.matchData.matchId === d.data.guid);
     ws.send(JSON.stringify({ 'Type': '2', 'message': matchArray[index] }));
     matchArray.splice(index, 1);
 });
-
 taWS.on("error", e => {
     throw e;
 });
