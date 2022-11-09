@@ -26,20 +26,26 @@ class Overlay {
             accLine: document.querySelector(".main .right .acc-line"),
             playerScores: null,
         };
+        this.players = {
+            left: null,
+            right: null,
+        }
         this.relay = new Relay({
             ip: "ws://localhost:2223",
-            updater: this.update
+            updater: (funny, dada) => this.update(funny, dada)
         });
 
-        if (this.relay.relaySocket.readyState === 1) {
-            this.relay.post("players");
-            this.relay.post("matches");
-        }
+        setTimeout(() => {
+            if (this.relay.relaySocket.readyState === 1) {
+                this.relay.post("players");
+                this.relay.post("matches");
+            }
+        }, 2000)
     }
 
     update(type, data) {
         switch (type) {
-            case "matchupdate": return this.updateMatch(data);
+            case "players": return this.updatePlayerData(data);
             case "scores": return this.updateScores(data);
         }
     }
@@ -48,20 +54,31 @@ class Overlay {
         console.log(data);
 
         if (this.relay.relaySocket.readyState === 1) {
+            console.log("didi")
             this.relay.post("players");
             this.relay.post("matches");
         }
     }
 
-    updateScores(scores) {
-        console.log("lemme update scores ui");
-
+    async updateScores(scores) {
         const { user_id, score, accuracy, combo, notesMissed,
             badCuts, bombHits, wallHits, maxCombo, lhAvg, lhBadCut, lhHits, lhMiss,
             rhAvg, rhBadCut, rhHits, rhMiss, totalMisses,
         } = scores;
-        const isLeftPlayer = user_id === this.left.playerScores.user_id;
-        const isRightPlayer = user_id === this.right.playerScores.user_id;
+        this.right.playerScores = scores;
+        this.left.playerScores = scores;
+        if (this.players.left == null) {
+            return;
+        }
+
+        if (this.left.scoresaber == null) {
+            console.log("Fetching naughties")
+            this.left.scoresaber = await this.fetchScoresaber(this.players.left.user_id);
+            this.right.scoresaber = await this.fetchScoresaber(this.players.right.user_id);
+        }
+
+        const isLeftPlayer = user_id === this.players.left.user_id;
+        const isRightPlayer = user_id === this.players.right.user_id;
         if (!isLeftPlayer && !isRightPlayer) {
             console.error("User ID not found in players");
             return;
@@ -74,27 +91,44 @@ class Overlay {
         }
 
         this.updateLoser();
-        this.updateScores();
+        this.updateScoress();
         this.updatePlayer();
     }
 
-    updatePlayer() {
-        this.left.name.innerText = data.players.left.name;
-        this.right.name.innerText = data.players.right.name;
-        this.left.country.src = `https://flagcdn.com/h240/de.png`;
-        this.right.country.src = `https://flagcdn.com/h240/de.png`;
-        this.left.playerImage.src = `https://cdn.scoresaber.com/avatars/76561198436848521.jpg`;
-        this.right.playerImage.src = `https://cdn.scoresaber.com/avatars/76561198014365525.jpg`;
+    updatePlayerData(data) {
+        console.log("lemme update player data ui", data);
+        this.players.left = data.players[0];
+        this.players.right = data.players[0];
     }
 
-    updateScores() {
+    updatePlayer() {
+        this.left.name.innerText = this.players.left.name;
+        this.right.name.innerText = this.players.right.name;
+        this.left.country.src = `https://flagcdn.com/h240/${this.left.scoresaber.country.toLowerCase()}.png`;
+        this.right.country.src = `https://flagcdn.com/h240/${this.right.scoresaber.country.toLowerCase()}.png`;
+        this.left.playerImage.src = this.left.scoresaber.profilePicture;
+        this.right.playerImage.src = this.right.scoresaber.profilePicture;
+    }
+
+    async fetchScoresaber(userId) {
+        try {
+            const response = await fetch(`https://scoresaber.com/api/player/${userId}/full`);
+            return await response.json();
+        } catch(e) {
+            console.error(e);
+            new Promise(resolve => setTimeout(resolve, 1000));
+            return fetchScoresaber(userId);
+        }
+    }
+
+    updateScoress() {
         this.left.score.innerText = this.left.playerScores.score.toString().split('').reverse().join('').replace(/([0-9]{3})/g, "$1 ").split('').reverse().join('');
-        this.left.acc.innerText = this.left.playerScores.accuracy.toFixed(2);
-        this.left.rank.innerText = this.left.playerScores.rank;
+        this.left.acc.innerText = (this.left.playerScores.accuracy * 100).toFixed(2);
+        this.left.rank.innerText = this.left.scoresaber.rank;
 
         this.right.score.innerText = this.right.playerScores.score.toString().split('').reverse().join('').replace(/([0-9]{3})/g, "$1 ").split('').reverse().join('');
-        this.right.acc.innerText = this.right.playerScores.accuracy.toFixed(2);
-        this.right.rank.innerText = this.right.playerScores.rank;
+        this.right.acc.innerText = (this.right.playerScores.accuracy * 100).toFixed(2);
+        this.right.rank.innerText = this.right.scoresaber.rank;
 
         const accDiffA = this.left.playerScores.accuracy - this.right.playerScores.accuracy;
         const accDiffB = this.right.playerScores.accuracy - this.left.playerScores.accuracy;
@@ -190,8 +224,8 @@ class Relay {
         this.updater("matches", matches);
     }
 
-    updateUsers(users) {
-        this.updater("users", users);
+    updateUsers(players) {
+        this.updater("players", players);
     }
 
 }

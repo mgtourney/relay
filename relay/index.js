@@ -178,8 +178,8 @@ class RelayManager {
             case "matches":
                 this.sendToUI(5, { matches: this.matches });
                 break;
-            case "users":
-                this.sendToUI(6, { users: this.users });
+            case "players":
+                this.sendToUI(6, { players: this.players });
                 break;
         }
     }

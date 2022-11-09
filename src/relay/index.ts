@@ -204,7 +204,7 @@ class RelayManager {
         const { command } = JSON.parse(data.toString());
         switch (command) {
             case "matches": this.sendToUI(5, { matches: this.matches }); break;
-            case "users": this.sendToUI(6, { users: this.users }); break;
+            case "players": this.sendToUI(6, { players: this.players }); break;
         }
     }
 
