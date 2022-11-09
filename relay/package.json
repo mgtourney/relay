@@ -1,0 +1,16 @@
+{
+  "name": "ta-client-example-node-ts",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "tsc index.ts && node index.js"
+  },
+  "dependencies": {
+    "tournament-assistant-client": "0.8.1",
+    "tslib": "^2.4.0",
+    "webpack": "^5.74.0",
+    "ws": "^8.9.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.3"
+  }
+}

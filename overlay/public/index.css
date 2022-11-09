@@ -1,0 +1,250 @@
+:root {
+    --purp1e: #9f96ff;
+    --kakifrucht: tomato;
+}
+
+html {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Heebo", sans-serif;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    color: #ffffffaf;
+    font-weight: 700;
+}
+
+.background {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+}
+
+.blur {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    background-color: #111111aa;
+    z-index: -1;
+    backdrop-filter: blur(10px);
+}
+
+.play {
+    display: block;
+}
+
+.header {
+    width: 100%;
+    height: 10%;
+    display: flex;
+}
+
+.header .accuracy {
+    position: relative;
+    flex: 1;
+}
+
+.header .accuracy > div {
+    position: absolute;
+    bottom: 0rem;
+    height: 4rem;
+    z-index: 1;
+}
+
+.header .accuracy:first-of-type > div {
+    right: 1rem;
+    transform-origin: right;
+}
+
+.header .accuracy:last-of-type > div {
+    left: 1rem;
+    transform-origin: left;
+}
+
+.header .accuracy:first-of-type .score {
+    margin-right: 1rem;
+}
+
+.header .accuracy:last-of-type .score {
+    margin-left: 1rem;
+}
+
+.accuracy .acc {
+    font-size: 2.5rem;
+}
+
+.accuracy .score {
+    font-size: 1.5rem;
+}
+
+.score {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #777;
+}
+
+.header .branding {
+    flex: 3;
+}
+
+.main {
+    width: 100%;
+    height: 75%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.main > div {
+    flex: 1;
+    height: 100%;
+    background-color: #333;
+    position: relative;
+    overflow: hidden;
+}
+
+.left {
+    border-top-right-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+}
+
+.right {
+    border-top-left-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+}
+
+.right .acc-line {
+    left: 0;
+}
+
+.left .acc-line {
+    right: 0;
+}
+
+.acc-line,
+.acc-line-background {
+    position: absolute;
+    height: 0.5rem;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+}
+
+.acc-line-background {
+    background-color: #111;
+}
+
+.acc-line {
+    background-color: #ccc;
+    transition: width 0.25s linear;
+}
+
+.footer {
+    width: 100%;
+    height: 15%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.footer > div {
+    height: 100%;
+}
+
+.player,
+.header .accuracy > div {
+    transition: transform 3s ease-in-out;
+}
+
+.player:first-of-type {
+    transform-origin: left;
+}
+
+.player:last-of-type {
+    transform-origin: right;
+}
+
+.loser {
+    transform: scale(0.8);
+}
+
+.casters {
+    flex: 2;
+}
+
+.footer .player:first-of-type {
+    flex: 1;
+    display: flex;
+    margin: -4rem auto auto 4rem;
+    position: relative;
+}
+
+.footer .player-name:last-of-type {
+    margin-right: 13rem;
+}
+
+.footer .player:last-of-type {
+    flex: 1;
+    display: flex;
+    flex-direction: row-reverse;
+    margin: -4rem 4rem auto auto;
+    position: relative;
+}
+
+.profile-image {
+    overflow: hidden;
+    border-radius: 50%;
+    position: relative;
+}
+
+.player-image {
+    width: 9.8rem;
+    height: 9.8rem;
+    object-fit: cover;
+    border-radius: 50%;
+    position: relative;
+    margin: 0.6rem;
+}
+
+.country-image {
+    position: absolute;
+    width: 11rem;
+    height: 11rem;
+    object-fit: cover;
+    border-radius: 50%;
+    filter: brightness(0.65);
+}
+
+.player-name {
+    position: absolute;
+    font-size: 2.5rem;
+    font-weight: 700;
+    bottom: 3.5rem;
+    height: 3rem;
+    line-height: 3rem;
+    margin-left: 13rem;
+}
+
+span:has(.rank) {
+    color: #777;
+    font-size: 1rem;
+    margin-top: -0.5rem;
+    display: block;
+}
+
+.rank {
+    font-size: 1.75rem;
+    margin-left: 0.25rem;
+}
