@@ -30,6 +30,7 @@ class RelayManager {
         this.heartbeat();
     }
     onRealtimeScore(scoreData) {
+        console.log("onRealtimeScore");
         const userScoring = {
             user_id: this.users[scoreData.data.user_guid].user_id,
             score: scoreData.data.score,
@@ -55,6 +56,7 @@ class RelayManager {
         }, this.users[scoreData.data.user_guid].stream_delay_ms + 1);
     }
     onUserLeft(userEvent) {
+        console.log("onUserLeft");
         if (userEvent.data.client_type > 1) {
             return;
         }
@@ -70,9 +72,11 @@ class RelayManager {
                 stream_delay_ms: user.data.stream_delay_ms,
                 stream_sync_start_ms: user.data.stream_sync_start_ms
             };
+            console.log("onUserAdded", user.data.guid, this.users);
         }
     }
     onUserUpdated(userEvent) {
+        console.log("onUserUpdated");
         if (userEvent.data.client_type > 1) {
             return;
         }
@@ -83,11 +87,12 @@ class RelayManager {
         user.stream_sync_start_ms = userEvent.data.stream_sync_start_ms;
     }
     onMatchCreated(match) {
+        console.log("onMatchCreated");
         const users = match.data.associated_users;
         users.push(this.taClient.Self.guid);
         this.taClient.updateMatch(match.data);
         this.players = users
-            .filter(guid => guid !== this.taClient.Self.guid)
+            .filter(guid => guid !== this.taClient.Self.guid && guid !== match.data.leader)
             .map(guid => this.users[guid]);
         console.log("Players", this.players);
         if (this.players.length !== 2 && false) {
@@ -101,6 +106,7 @@ class RelayManager {
         this.taClient.ServerSettings.score_update_frequency = 175;
     }
     onMatchUpdated(match) {
+        console.log("onMatchUpdated");
         if (match.data.selected_level == null)
             return;
         this.updateMatch(match);
@@ -111,18 +117,20 @@ class RelayManager {
         });
     }
     onMatchDeleted(match) {
+        console.log("onMatchDeleted");
         delete this.matches[match.data.guid];
         this.sendToUI(2, { matches: this.matches });
     }
     updateMatch(match) {
-        const coordinator = this.users.find(u => u.guid === match.data.leader);
+        console.log("Update match");
+        const coordinator = this.users[match.data.leader];
         this.matches[match.data.guid] = {
             matchId: match.data.guid,
             coordinator: {
                 name: coordinator?.name ?? "Unknown",
                 id: coordinator ? match.data.leader : "00000000-0000-0000-0000-000000000000"
             },
-            players: this.players.map(u => ({
+            players: this.players.map(u => (console.log(u), {
                 name: u.name,
                 user_id: u.user_id,
                 guid: u.guid
@@ -154,6 +162,7 @@ class RelayManager {
     }
     onRelayConnection(socket) {
         this.sendToUI(0, { message: "You've connected to the Tournament relay server." });
+        console.log("You've connected to the Tournament relay server.");
         socket.on('message', (data, isBinary) => {
             this.relayServer.clients.forEach(function each(client) {
                 if (client !== socket && client.readyState === WebSocket.OPEN) {
@@ -186,6 +195,6 @@ class RelayManager {
     }
 }
 new RelayManager({
-    taUrl: "ws://magnesium.checksum.space:2053",
+    taUrl: "ws://tournamentassistant.net:2053",
     relayPort: 2223,
 });

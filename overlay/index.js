@@ -149,13 +149,13 @@ class Relay {
     onMessage(message) {
         const data = JSON.parse(message.data);
         switch (data.Type) {
-            case "0": return this.onTAConnected(data);
-            case "1": return this.onHeartBeat(data);
-            case "2": return this.onMatchDeletion(data);
-            case "3": return this.onMatchUpdate(data);
-            case "4": return this.onScoreUpdate(data);
-            case "5": return this.updateMatches(data);
-            case "6": return this.updateUsers(data);
+            case 0: return this.onTAConnected(data);
+            case 1: return this.onHeartBeat(data);
+            case 2: return this.onMatchDeletion(data);
+            case 3: return this.onMatchUpdate(data);
+            case 4: return this.onScoreUpdate(data);
+            case 5: return this.updateMatches(data);
+            case 6: return this.updateUsers(data);
             default:
                 console.log("Unknown message", data);
                 return;
