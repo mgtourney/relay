@@ -17,6 +17,10 @@ body {
     font-weight: 700;
 }
 
+#app {
+    height: 100%;
+}
+
 .background {
     display: none;
     position: fixed;
