@@ -8,6 +8,7 @@ export default {
             players: [],
             matches: {},
             scores: {},
+            scoresabers: {},
         }
     },
     mounted() {
@@ -34,8 +35,10 @@ export default {
         onTAConnected() {
             console.log("Relay connected to TA");
         },
-        onHeartBeat() {
+        onHeartBeat(data) {
             console.log("Heartbeat");
+            this.onUsersUpdate(data);
+            this.onMatchUpdate(data);
         },
         onMatchUpdate(matches) {
             console.log("Matches Update", matches);
@@ -43,7 +46,7 @@ export default {
         },
         onScoreUpdate(scores) {
             console.log("Scores Update", scores);
-            this.scores = scores.scores;
+            this.scores[scores.user_id] = scores;
         },
         onUsersUpdate(players) {
             console.log("Players Update", players);
@@ -52,9 +55,9 @@ export default {
         },
         updateScoresabers() {
             for (const player of this.players) {
-                if (player.scoresaber == null) {
+                if (this.scoresabers[player.user_id] == null) {
                     this.getScoresaber(player.user_id).then(scoresaber => {
-                        player.scoresaber = scoresaber;
+                        this.scoresabers[player.user_id] = scoresaber;
                     });
                 }
             }
@@ -75,7 +78,26 @@ export default {
     updated() {
         console.log("Updated HERE");
     },
-    computed: {},
+    computed: {
+        leftFlag() {
+            return this.scoresabers[this.players[0]?.user_id]?.countryFlag;
+        },
+        rightFlag() {
+            return this.scoresabers[this.players[1]?.user_id]?.countryFlag;
+        },
+        leftProfilePic() {
+            return this.scoresabers[this.players[0]?.user_id]?.profilePicture;
+        },
+        rightProfilePic() {
+            return this.scoresabers[this.players[1]?.user_id]?.profilePicture;
+        },
+        leftRank() {
+            return this.scoresabers[this.players[0]?.user_id]?.rank;
+        },
+        rightRank() {
+            return this.scoresabers[this.players[1]?.user_id]?.rank;
+        },
+    },
     components: {
         Header,
         Main,
@@ -91,14 +113,14 @@ export default {
         <div class="main"><Main></div>
         <div class="footer">
             <Footer 
-                :leftrank="players?.[0]?.scoresaber?.rank" 
-                :rightrank="players?.[1]?.scoresaber?.rank" 
+                :leftrank="leftRank" 
+                :rightrank="rightRank" 
                 :leftname="players?.[0]?.name" 
                 :rightname="players?.[1]?.name"
-                :leftpicture="players?.[0]?.scoresaber?.profilePicture"
-                :rightpicture="players?.[1]?.scoresaber?.profilePicture"
-                :leftflag="players?.[0]?.scoresaber?.countryFlag"
-                :rightflag="players?.[1]?.scoresaber?.countryFlag"
+                :leftpicture="leftProfilePic"
+                :rightpicture="rightProfilePic"
+                :leftflag="leftFlag"
+                :rightflag="rightFlag"
                 >
         </div>
         <div class="blur"></div>

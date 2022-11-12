@@ -239,16 +239,17 @@ body {
     height: 3rem;
     line-height: 3rem;
     margin-left: 13rem;
+    width: 20vw;
 }
 
-span:has(.rank) {
+.rank {
     color: #777;
     font-size: 1rem;
     margin-top: -0.5rem;
     display: block;
+    font-size: 1.25rem;
 }
 
-.rank {
-    font-size: 1.75rem;
-    margin-left: 0.25rem;
+.right-player .player-name {
+    text-align: right;
 }

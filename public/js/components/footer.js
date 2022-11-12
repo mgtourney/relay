@@ -16,23 +16,23 @@ export default {
     template: /*html*/`
         <div class="player left-player loser">
             <div class="profile-image">
-                <img class="country-image">
-                <img class="player-image">
+                <img class="country-image" :src="leftflag">
+                <img class="player-image" :src="leftflag">
             </div>
             <div class="player-name">
                 <span class="name">{{ leftname }}</span>
-                <span>RANK <span class="rank">{{ leftrank }}</span></span>
+                <span class="rank">RANK &nbsp;{{ leftrank }}</span>
             </div>
         </div>
         <div class="casters"></div>
         <div class="player right-player" id="right-player">
             <div class="profile-image">
-                <img class="country-image">
-                <img class="player-image">
+                <img class="country-image" :src="rightflag">
+                <img class="player-image" :src="rightpicture">
             </div>
             <div class="player-name">
                 <span class="name">{{ rightname }}</span>
-                <span>RANK <span class="rank">{{ rightrank }}</span></span>
+                <span class="rank">RANK &nbsp;{{ rightrank }}</span>
             </div>
         </div>
     `,

@@ -51,7 +51,6 @@ export default class RelayManager {
     }
 
     set users(usersMap: Map<string, Models.User>) {
-        console.log("users", Array.from(usersMap.values()));
         this._users = usersMap;
         const users = Array.from(usersMap.values());
         this.players = users.filter(user => user.client_type === Models.User.ClientTypes.Player)
@@ -70,8 +69,12 @@ export default class RelayManager {
     }
 
     set matches(matches: Map<string, Models.Match>) {
+        console.log("asdasdasd", matches)
+        const ms = Array.from(matches.values()).map(m => m.toObject());
+        console.log("999999999", ms);
+
         this._matches = matches;
-        this.sendToUI(3, { matches: this.matches });
+        this.sendToUI(3, { matches: ms });
     }
 
     onUserAdded(recv: TAEvents.PacketEvent<Models.User>) {
@@ -211,8 +214,9 @@ export default class RelayManager {
 
     heartbeat() {
         setInterval(() => this.sendToUI(1, {
-            message: 'heartbeat'
-        }), 29000);
+            players: this.players,
+            matches: Array.from(this.matches.values()).map(m => m.toObject()),
+        }), 5000);
     }
 
     isPlayerOrCoordinator(user: Models.User) {
