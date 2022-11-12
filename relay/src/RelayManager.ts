@@ -8,9 +8,9 @@ export default class RelayManager {
     relayServer: WebSocketServer;
     uiSocket: WebSocket;
     taClient: Client;
-    users: Map<string, Models.User>;
-    matches: Map<string, Models.Match>;
-    players: Array<Player>;
+    _users: Map<string, Models.User>;
+    _matches: Map<string, Models.Match>;
+    _players: Array<Player>;
 
     constructor({ taUrl, relayPort }) {
         this.relayServer = new WebSocketServer({ port: relayPort });
@@ -19,9 +19,9 @@ export default class RelayManager {
             url: taUrl,
             options: { autoReconnect: true, autoReconnectInterval: 1000 }
         });
-        this.users = new Map();
-        this.matches = new Map();
-        this.players = [];
+        this._users = new Map();
+        this._matches = new Map();
+        this._players = [];
 
         this.relayServer.on("connection", socket => this.onRelayConnection(socket));
         this.taClient.on("packet", packet => this.onPacket(packet));
@@ -36,51 +36,75 @@ export default class RelayManager {
         this.heartbeat();
     }
 
+    get players() {
+        return this._players;
+    }
+
+    get users(): Map<string, Models.User> {
+        return this._users;
+    }
+
+    set players(players: Array<Player>) {
+        console.log("players", players);
+        this._players = players;
+        this.sendToUI(6, { players: this._players })
+    }
+
+    set users(usersMap: Map<string, Models.User>) {
+        console.log("users", Array.from(usersMap.values()));
+        this._users = usersMap;
+        const users = Array.from(usersMap.values());
+        this.players = users.filter(user => user.client_type === Models.User.ClientTypes.Player)
+            .map(user => ({
+                name: user.name,
+                type: user.client_type,
+                user_id: user.user_id,
+                guid: user.guid,
+                stream_delay_ms: user.stream_delay_ms,
+                stream_sync_start_ms: user.stream_sync_start_ms,
+            }));
+    }
+
+    get matches() {
+        return this._matches;
+    }
+
+    set matches(matches: Map<string, Models.Match>) {
+        this._matches = matches;
+        this.sendToUI(3, { matches: this.matches });
+    }
 
     onUserAdded(recv: TAEvents.PacketEvent<Models.User>) {
+        if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserAdded`);
 
-        if (recv.data.client_type > 1) return;
         const player = recv.data;
-
-        this.users[player.guid] = {
-            name: player.name,
-            type: player.client_type,
-            user_id: player.user_id,
-            guid: player.guid,
-            stream_delay_ms: player.stream_delay_ms,
-            stream_sync_start_ms: player.stream_sync_start_ms
-        };
+        this.users.set(player.guid, player);
+        this.users = new Map(this.users);
     }
 
     onUserUpdated(recv: TAEvents.PacketEvent<Models.User>) {
+        if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserUpdated`);
 
-        if (recv.data.client_type > 1) return;
-
-        const playerState = this.users[recv.data.guid];
-        if (playerState == null) return logger.error(`Player ${recv.data.guid} not found in users list`);
-
-        // Update the player state
-        playerState.stream_delay_ms = recv.data.stream_delay_ms;
-        playerState.stream_sync_start_ms = recv.data.stream_sync_start_ms;
+        this.users.set(recv.data.guid, recv.data);
+        this.users = new Map(this.users);
     }
 
     onUserLeft(recv: TAEvents.PacketEvent<Models.User>) {
+        if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserLeft`);
 
-        if (recv.data.client_type > 1) return;
-
-        delete this.users[recv.data.guid];
+        this.users.delete(recv.data.guid);
+        this.users = new Map(this.users);
     }
 
     onRealtimeScore(recv: TAEvents.PacketEvent<Packets.Push.RealtimeScore>) {
         logger.debug(`onRealtimeScore`);
 
-        let packet = recv.data;
-
+        const packet = recv.data;
         const packetScore = {
-            user_id: this.users[packet.user_guid].user_id,
+            user_id: this.users.get(packet.user_guid)?.user_id,
             score: packet.score,
             accuracy: packet.accuracy,
             combo: packet.combo,
@@ -100,9 +124,10 @@ export default class RelayManager {
             totalMisses: packet.scoreTracker.notesMissed + packet.scoreTracker.badCuts,
         };
 
+        const delay = this.users.get(packet.user_guid)?.stream_delay_ms ?? 0;
         setTimeout(() => {
             this.sendToUI(4, packetScore);
-        }, this.users[packet.user_guid].stream_delay_ms + 1);
+        }, delay + 1);
     }
 
     onMatchCreated(match: TAEvents.PacketEvent<Models.Match>) {
@@ -113,59 +138,28 @@ export default class RelayManager {
         users.push(this.taClient.Self.guid);
         this.taClient.updateMatch(match.data);
 
-        this.players = users
-            .filter(guid => guid !== this.taClient.Self.guid && guid !== match.data.leader)
-            .map(guid => this.users[guid]);
-
         // todo: support for more than 2 players
 
         this.updateMatch(match);
-        this.sendToUI(7, {
-            overlay: '1V1',
-            matches: this.matches,
-        });
 
         this.taClient.ServerSettings.score_update_frequency = 175;
     }
 
     onMatchUpdated(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchUpdated`);
-
-        if (match.data.selected_level == null)
-            return;
-
         this.updateMatch(match);
-        this.sendToUI(3, {
-            'overlay': 'BattleRoyale',
-            'LevelId': match.data.selected_level.level_id,
-            'Diff': match.data.selected_difficulty
-        });
     }
 
     onMatchDeleted(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchDeleted`);
-
-        delete this.matches[match.data.guid];
-        this.sendToUI(2, { matches: this.matches });
+        this.matches.delete(match.data.guid);
+        this.matches = new Map(this.matches);
     }
 
     updateMatch(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`updateMatch`);
-
-        const coordinator = this.users[match.data.leader];
-
-        this.matches[match.data.guid] = {
-            matchId: match.data.guid,
-            coordinator: {
-                name: coordinator?.name ?? "Unknown",
-                id: coordinator ? match.data.leader : "00000000-0000-0000-0000-000000000000"
-            },
-            players: this.players.map(u => ({
-                name: u.name,
-                user_id: u.user_id,
-                guid: u.guid
-            }))
-        };
+        this.matches.set(match.data.guid, match.data);
+        this.matches = new Map(this.matches);
     }
 
     onPacket(packet: Packets.Packet) {
@@ -206,15 +200,7 @@ export default class RelayManager {
             });
         });
 
-        socket.on('message', data => this.onUIMessage(data));
-    }
-
-    onUIMessage(data: RawData) {
-        const { command } = JSON.parse(data.toString());
-        switch (command) {
-            case "matches": this.sendToUI(5, { matches: this.matches }); break;
-            case "players": this.sendToUI(6, { players: this.players }); break;
-        }
+        socket.on('message', data => {});
     }
 
     sendToUI(type: number, data: Array<any> | object) {
@@ -227,6 +213,11 @@ export default class RelayManager {
         setInterval(() => this.sendToUI(1, {
             message: 'heartbeat'
         }), 29000);
+    }
+
+    isPlayerOrCoordinator(user: Models.User) {
+        return user.client_type == Models.User.ClientTypes.Coordinator ||
+            user.client_type == Models.User.ClientTypes.Player;
     }
 
     async shutdown() {
