@@ -15,61 +15,8 @@
 </head>
 
 <body>
-    <div id="background">
-        <video class="background play" muted autoplay loop preload onloadstart="this.playbackRate = 1">
-            <source src="videos/Chain.mp4" type="video/mp4">
-        </video>
-    </div>
-    <div class="header">
-        <div class="accuracy">
-            <div class="left-score-wrapper loser">
-                <span class="score">1 234 678</span>
-                <span class="acc">97.67<ta-acc type="left" /></span>
-            </div>
-        </div>
-        <div class="accuracy">
-            <div class="right-score-wrapper">
-                <span class="acc">98.20</span>
-                <span class="score">1 432 123</span>
-            </div>
-        </div>
-    </div>
-    <div class="main">
-        <div class="left">
-            <hr class="acc-line-background" width="100%">
-            <hr class="acc-line" width="0%">
-        </div>
-        <div class="right">
-            <hr class="acc-line-background" width="100%">
-            <hr class="acc-line" width="35%">
-        </div>
-    </div>
-    <div class="footer">
-        <div class="player left-player loser">
-            <div class="profile-image">
-                <img class="country-image" src="https://flagcdn.com/h240/de.png" alt="">
-                <img class="player-image" src="https://cdn.scoresaber.com/avatars/76561198436848521.jpg" alt="">
-            </div>
-            <div class="player-name">
-                <span class="name">GoosyChan</span>
-                <span>RANK <span class="rank">413</span></span>
-            </div>
-        </div>
-        <div class="casters"></div>
-        <div class="player right-player">
-            <div class="profile-image">
-                <img class="country-image" src="https://flagcdn.com/h240/de.png" alt="">
-                <img class="player-image" src="https://cdn.scoresaber.com/avatars/76561198014365525.jpg" alt="">
-            </div>
-            <div class="player-name">
-                <span class="name">Kakifrucht</span>
-                <span>RANK <span class="rank">157</span></span>
-            </div>
-        </div>
-    </div>
-    <div class="blur"></div>
-
-    <script src="index.js" defer></script>
+    <div id="app"></div>
+    <script src="js/index.js" type="module"></script>
 </body>
 
 </html>
