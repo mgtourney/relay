@@ -2,28 +2,21 @@
   "name": "magnesium-ta-overlay",
   "version": "0.0.1",
   "scripts": {
-    "relay": "tsc --p ./src/relay && node relay/index.js",
-    "overlay": "tsc --p ./src/overlay && node overlay/server/index.js"
+    "serve": "tsc -p server && node dist/server/index.js",
+    "relay": "tsc -p relay && node dist/relay/index.js"
   },
-  "type": "module",
   "dependencies": {
-    "@protobuf-ts/plugin": "^2.8.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "protobufjs": "^7.1.2",
     "tournament-assistant-client": "0.8.1",
-    "tslib": "^2.4.0",
-    "websocket": "^1.0.34",
+    "winston": "^3.8.2",
     "ws": "^8.9.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.14",
     "@types/node": "^18.11.9",
     "@types/ws": "^8.5.3",
-    "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^11.0.0",
-    "declaration-bundler-webpack-plugin": "^1.0.3",
-    "ts-loader": "^9.4.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "tslib": "^2.4.1"
   }
 }

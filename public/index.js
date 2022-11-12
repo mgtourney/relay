@@ -114,7 +114,7 @@ class Overlay {
         try {
             const response = await fetch(`https://scoresaber.com/api/player/${userId}/full`);
             return await response.json();
-        } catch(e) {
+        } catch (e) {
             console.error(e);
             new Promise(resolve => setTimeout(resolve, 1000));
             return fetchScoresaber(userId);
