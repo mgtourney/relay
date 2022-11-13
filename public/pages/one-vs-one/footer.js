@@ -10,29 +10,32 @@ export default {
         rightflag: { String },
     },
     data() {
-        return {}
+        return {
+            leftDefaultProfilePicture: "https://cdn.scoresaber.com/avatars/76561198436848521.jpg",
+            rightDefaultProfilePicture: "https://cdn.scoresaber.com/avatars/76561198347791418.jpg",
+        }
     },
     computed: {},
+    methods: {},
     template: /*html*/`
-        <div class="player left-player loser">
-            <div class="profile-image">
-                <img class="country-image" :src="leftflag">
-                <img class="player-image" :src="leftflag">
+        <div class="footer">
+            <div class="footer-left">
+                <div class="footer-left-image">
+                    <img :src="leftpicture || leftDefaultProfilePicture" />
+                </div>
+                <div class="footer-left-name">
+                    <div class="footer-left-name-text primary">{{ leftname ?? "Goosy" }}</div>
+                    <div class="footer-left-name-rank secondary"><small>#</small>{{ leftrank ?? 42 }}</div>
+                </div>
             </div>
-            <div class="player-name">
-                <span class="name">{{ leftname }}</span>
-                <span class="rank">RANK &nbsp;{{ leftrank }}</span>
-            </div>
-        </div>
-        <div class="casters"></div>
-        <div class="player right-player" id="right-player">
-            <div class="profile-image">
-                <img class="country-image" :src="rightflag">
-                <img class="player-image" :src="rightpicture">
-            </div>
-            <div class="player-name">
-                <span class="name">{{ rightname }}</span>
-                <span class="rank">RANK &nbsp;{{ rightrank }}</span>
+            <div class="footer-right">
+                <div class="footer-right-image">
+                    <img :src="rightpicture || rightDefaultProfilePicture" />
+                </div>
+                <div class="footer-right-name">
+                    <div class="footer-right-name-text primary">{{ rightname ?? "Checksum" }}</div>
+                    <div class="footer-right-name-rank secondary"><small>#</small>{{ rightrank ?? 69 }}</div>
+                </div>
             </div>
         </div>
     `,

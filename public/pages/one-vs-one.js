@@ -1,5 +1,5 @@
 import Header from './one-vs-one/header.js';
-import Main from './one-vs-one/main.js';
+import Streams from './one-vs-one/main.js';
 import Footer from './one-vs-one/footer.js';
 
 export default {
@@ -75,9 +75,6 @@ export default {
             }
         }
     },
-    updated() {
-        console.log("Updated HERE");
-    },
     computed: {
         leftFlag() {
             return this.scoresabers[this.players[0]?.user_id]?.countryFlag;
@@ -99,30 +96,28 @@ export default {
         },
     },
     components: {
-        Header,
-        Main,
-        Footer,
+        "header-content": Header,
+        "stream-content": Streams,
+        "footer-content": Footer,
     },
     template: /*html*/`
         <div id="background">
-            <video class="background play" muted autoplay loop preload onloadstart="this.playbackRate = 1">
-                <source src="videos/Chain.mp4" type="video/mp4">
+            <video class="background play" muted autoplay loop preload onloadstart="this.playbackRate = 0.8">
+                <source src="videos/Ink.mp4" type="video/mp4">
             </video>
+            <div class="blur"></div>
         </div>
-        <div class="header"><Header></div>
-        <div class="main"><Main></div>
-        <div class="footer">
-            <Footer 
-                :leftrank="leftRank" 
-                :rightrank="rightRank" 
-                :leftname="players?.[0]?.name" 
-                :rightname="players?.[1]?.name"
-                :leftpicture="leftProfilePic"
-                :rightpicture="rightProfilePic"
-                :leftflag="leftFlag"
-                :rightflag="rightFlag"
-                >
-        </div>
-        <div class="blur"></div>
+        <header-content />
+        <stream-content />
+        <footer-content 
+            :leftrank="leftRank" 
+            :rightrank="rightRank" 
+            :leftname="players?.[0]?.name" 
+            :rightname="players?.[1]?.name"
+            :leftpicture="leftProfilePic"
+            :rightpicture="rightProfilePic"
+            :leftflag="leftFlag"
+            :rightflag="rightFlag"
+            />
     `,
 }
