@@ -103,7 +103,7 @@ export default {
     template: /*html*/`
         <div id="background">
             <video class="background play" muted autoplay loop preload onloadstart="this.playbackRate = 0.8">
-                <source src="videos/Ink.mp4" type="video/mp4">
+                <source src="videos/Ink2.mp4" type="video/mp4">
             </video>
             <div class="blur"></div>
         </div>
