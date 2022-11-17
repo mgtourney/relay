@@ -1,5 +1,5 @@
 import { Client, Models, Packets, TAEvents } from "tournament-assistant-client";
-import { RawData, WebSocket, WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 import Player from "./types/Player";
 import { logger } from '.';
 
@@ -45,7 +45,6 @@ export default class RelayManager {
     }
 
     set players(players: Array<Player>) {
-        console.log("players", players);
         this._players = players;
         this.sendToUI(6, { players: this._players })
     }
@@ -69,9 +68,7 @@ export default class RelayManager {
     }
 
     set matches(matches: Map<string, Models.Match>) {
-        console.log("asdasdasd", matches)
         const ms = Array.from(matches.values()).map(m => m.toObject());
-        console.log("999999999", ms);
 
         this._matches = matches;
         this.sendToUI(3, { matches: ms });
@@ -192,8 +189,8 @@ export default class RelayManager {
 
 
     onRelayConnection(socket: WebSocket) {
-        this.sendToUI(0, { message: "You've connected to the Tournament relay server." });
-        logger.info("Connected to the Tournament relay server.");
+        this.sendToUI(0, { message: "Connected to relay server" });
+        logger.debug(`${socket.url} connected`);
 
         socket.on('message', (data, isBinary) => {
             this.relayServer.clients.forEach(function each(client) {
@@ -202,8 +199,6 @@ export default class RelayManager {
                 }
             });
         });
-
-        socket.on('message', data => {});
     }
 
     sendToUI(type: number, data: Array<any> | object) {
