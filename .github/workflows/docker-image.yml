@@ -36,7 +36,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ github.repository }}:${{ github.sha }}
-            ${{ github.repository }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}:latest
             ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
