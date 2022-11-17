@@ -2,14 +2,35 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag relay:$(date +%s)
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v2
+        id: node-cache
+        with:
+          path: |
+            **/node_modules
+
+          key: node-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            node-${{ hashFiles('**/package.json') }}
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag relay:$(github.sha)
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the Docker image
+        run: docker push ghcr.io/${{ github.repository }}:$(github.sha)
