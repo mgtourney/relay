@@ -33,4 +33,4 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ github.repository_owner }}/${{ github.repository }}:${{ github.sha }}
+          tags: ${{ github.repository }}:${{ github.sha }}
