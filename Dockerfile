@@ -19,10 +19,11 @@ RUN tsc
 # we can now create a new image with only the compiled javascript
 FROM node:16-alpine
 
-# Set environment variables
-ENV NODE_ENV=production
+# Set default environment variables
+ENV TA_URL=ws://tournamentassistant.net:2053
+ENV RELAY_PORT=2223
+
 ENV DOCKER=true
-ENV PORT=3000
 
 # Expose ports
 EXPOSE 3000

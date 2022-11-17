@@ -1,25 +1,42 @@
-import { createLogger, format, transports } from "winston";
+import { createLogger, format, Logger, transports } from "winston";
 import RelayManager from "./RelayManager";
 import dotenv from "dotenv"
 
 dotenv.config();
 
-const logger = createLogger({
-    level: 'info',
-    format: format.combine(
-        format.colorize(),
-        format.simple()
-    )
-});
+if (!process.env.TA_URL) {
+    throw new Error("TA_URL not set");
+}
 
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new transports.Console({
-        level: 'debug',
+if (!process.env.RELAY_PORT) {
+    throw new Error("RELAY_PORT not set");
+}
+
+let logger: Logger;
+
+if (process.env.DOCKER) {
+    logger = createLogger({
+        level: "info",
+        format: format.combine(
+            format.timestamp(),
+            format.json()
+        ),
+        transports: [
+            new transports.Console()
+        ]
+    });
+} else {
+    logger = createLogger({
+        level: "info",
         format: format.combine(
             format.colorize(),
-            format.simple()
-        )
-    }));
+            format.timestamp(),
+            format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+        ),
+        transports: [
+            new transports.Console()
+        ]
+    });
 }
 
 const relay = new RelayManager({
