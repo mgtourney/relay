@@ -7,16 +7,13 @@ WORKDIR /build
 COPY package.json ./
 
 # Install typescript and the dependencies
-RUN npm install -g typescript tslib && npm install
+RUN npm install -g typescript && npm install
 
 # Copy the rest of the project to the container
 COPY . .
 
 # Build the project with tsc
 RUN tsc
-
-# Prune the dev dependencies
-RUN npm prune --omit=dev
 
 # Now we have a compiled version of the project in the dist folder,
 # we can now create a new image with only the compiled javascript
