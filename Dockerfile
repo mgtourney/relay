@@ -1,4 +1,4 @@
-FROM node:16-alpine AS builder
+FROM node:lts AS builder
 
 # Set the project workdir to /app
 WORKDIR /build
