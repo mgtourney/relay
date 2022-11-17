@@ -5,17 +5,19 @@ import { logger } from '.';
 
 export default class RelayManager {
 
+    private _users: Map<string, Models.User>;
+    private _matches: Map<string, Models.Match>;
+    private _players: Array<Player>;
+
     relayServer: WebSocketServer;
     uiSocket: WebSocket;
     taClient: Client;
-    _users: Map<string, Models.User>;
-    _matches: Map<string, Models.Match>;
-    _players: Array<Player>;
+
 
     constructor({ taUrl, relayPort }) {
         this.relayServer = new WebSocketServer({ port: relayPort });
         this.uiSocket = new WebSocket(`ws://localhost:${relayPort}`);
-        this.taClient = new Client("Overlay", {
+        this.taClient = new Client("Relay", {
             url: taUrl,
             options: { autoReconnect: true, autoReconnectInterval: 1000 }
         });
