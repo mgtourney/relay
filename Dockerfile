@@ -7,7 +7,7 @@ WORKDIR /build
 COPY package.json ./
 
 # Install typescript and the dependencies
-RUN npm install -g typescript && npm install
+RUN npm install -g typescript tslib && npm install
 
 # Copy the rest of the project to the container
 COPY . .
