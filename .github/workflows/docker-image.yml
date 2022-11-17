@@ -22,8 +22,15 @@ jobs:
           restore-keys: |
             node-${{ hashFiles('**/package.json') }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build the Docker image and push it to GitHub Packages
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: mgtourney/${{ github.repository }}:${{ github.sha }}
+          tags: ${{ github.repository_owner }}/${{ github.event.repository }}:${{ github.sha }}
