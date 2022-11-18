@@ -39,6 +39,8 @@ if (process.env.DOCKER) {
     });
 }
 
+logger.info(`Starting relay server on ws://127.0.0.1:${process.env.RELAY_PORT}`);
+
 const relay = new RelayManager({
     taUrl: process.env.TA_URL,
     relayPort: process.env.RELAY_PORT,
