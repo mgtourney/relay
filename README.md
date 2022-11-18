@@ -2,7 +2,7 @@
 
 This is a simple [TournamentAssistant](https://github.com/MatrikMoon/TournamentAssistant) relay server coded in TypeScript for use in Beat Saber tournament overlays.
 
-Relay decodes the protobuf messages sent by TournamentAssistant and returns JSON objects that can be used in your overlay to display the current song, scores, and other information.
+The Relay decodes the messages sent by the TournamentAssistant mod and returns JSON that can be used in your overlay to display the current song, scores, and other information.
 
 ## Quick Start 🚀
 
