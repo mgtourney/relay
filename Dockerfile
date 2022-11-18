@@ -7,7 +7,8 @@ WORKDIR /build
 COPY package.json ./
 
 # Install typescript and the dependencies
-RUN npm install -g typescript && npm install
+RUN npm install -g typescript@4.9.3 \
+    && npm install
 
 # Copy the rest of the project to the container
 COPY . .
@@ -33,10 +34,8 @@ WORKDIR /app
 
 # Create a non-root user to run the application
 RUN addgroup -S relay
-RUN adduser -S -D -h /app relay relay
-
-# Change the owner of the workdir to the relay user
-RUN chown -R relay:relay /app
+RUN adduser -S -D -h /app relay relay \
+    && chown -R relay:relay /app
 
 # Set the user to relay
 USER relay
