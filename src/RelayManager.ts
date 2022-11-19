@@ -1,6 +1,7 @@
 import { Client, Models, Packets, TAEvents } from "tournament-assistant-client";
 import { WebSocket, WebSocketServer } from "ws";
 import Player from "./types/Player";
+import UIWebSocketManager from "./UIWebSocketManager";
 import { logger } from '.';
 
 export default class RelayManager {
@@ -9,18 +10,17 @@ export default class RelayManager {
     private _matches: Map<string, Models.Match>;
     private _players: Array<Player>;
 
+    uiSocketManager: UIWebSocketManager;
     relayServer: WebSocketServer;
-    uiSocket: WebSocket;
     taClient: Client;
-
 
     constructor({ taUrl, relayPort }) {
         this.relayServer = new WebSocketServer({ port: relayPort });
-        this.uiSocket = new WebSocket(`ws://localhost:${relayPort}`);
         this.taClient = new Client("Relay", {
             url: taUrl,
             options: { autoReconnect: true, autoReconnectInterval: 1000 }
         });
+        this.uiSocketManager = new UIWebSocketManager(new WebSocket(`ws://localhost:${relayPort}`));
         this._users = new Map();
         this._matches = new Map();
         this._players = [];
@@ -48,7 +48,7 @@ export default class RelayManager {
 
     set players(players: Array<Player>) {
         this._players = players;
-        this.sendToUI(6, { players: this._players })
+        this.uiSocketManager.sendToUI(6, { players: this._players })
     }
 
     set users(usersMap: Map<string, Models.User>) {
@@ -73,7 +73,7 @@ export default class RelayManager {
         const ms = Array.from(matches.values()).map(m => m.toObject());
 
         this._matches = matches;
-        this.sendToUI(3, { matches: ms });
+        this.uiSocketManager.sendToUI(3, { matches: ms });
     }
 
     onUserAdded(recv: TAEvents.PacketEvent<Models.User>) {
@@ -128,7 +128,7 @@ export default class RelayManager {
 
         const delay = this.users.get(packet.user_guid)?.stream_delay_ms ?? 0;
         setTimeout(() => {
-            this.sendToUI(4, packetScore);
+            this.uiSocketManager.sendToUI(4, packetScore);
         }, delay + 1);
     }
 
@@ -191,7 +191,7 @@ export default class RelayManager {
 
 
     onRelayConnection(socket: WebSocket) {
-        this.sendToUI(0, { message: "Connected to relay server" });
+        this.uiSocketManager.sendToUI(0, { message: "Connected to relay server" });
         logger.debug(`${socket.url} connected`);
 
         socket.on('message', (data, isBinary) => {
@@ -202,15 +202,10 @@ export default class RelayManager {
             });
         });
     }
-
-    sendToUI(type: number, data: Array<any> | object) {
-        if (this.uiSocket.readyState === WebSocket.OPEN) {
-            this.uiSocket.send(JSON.stringify({ Type: type, ...data }));
-        }
-    }
+    
 
     heartbeat() {
-        setInterval(() => this.sendToUI(1, {
+        setInterval(() => this.uiSocketManager.sendToUI(1, {
             players: this.players,
             matches: Array.from(this.matches.values()).map(m => m.toObject()),
         }), 5000);
@@ -226,7 +221,7 @@ export default class RelayManager {
 
         try {
             this.relayServer.close();
-            this.uiSocket.close();
+            this.uiSocketManager.close();
             this.taClient.close();
         } catch (error) {
             logger.error(error);
