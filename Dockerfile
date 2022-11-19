@@ -22,12 +22,12 @@ FROM node:16-alpine
 
 # Set default environment variables
 ENV TA_URL=ws://tournamentassistant.net:2053
-ENV RELAY_PORT=2223
+ENV RELAY_PORT=2053
 
 ENV DOCKER=true
 
 # Expose ports
-EXPOSE 3000
+EXPOSE 2053
 
 # Set the project workdir to /app
 WORKDIR /app
