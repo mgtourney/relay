@@ -62,7 +62,8 @@ export default class RelayManager {
                 guid: user.guid,
                 stream_delay_ms: user.stream_delay_ms,
                 stream_sync_start_ms: user.stream_sync_start_ms,
-            }));
+            }))
+            .sort((ua, ub) => ua.user_id > ub.user_id ? 1 : -1);
     }
 
     get matches() {
