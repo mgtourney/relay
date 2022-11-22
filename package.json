@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "dotenv": "^16.0.3",
-    "tournament-assistant-client": "0.8.1",
+    "tournament-assistant-client": "^0.9.0",
     "winston": "^3.8.2",
     "ws": "^8.11.0"
   },
