@@ -3,16 +3,14 @@ import { WebSocket, WebSocketServer } from "ws";
 import Player from "./types/Player";
 import UIWebSocketManager from "./UIWebSocketManager";
 import { logger } from '.';
+import Game from "./Game";
 
 export default class RelayManager {
-
-    private _users: Map<string, Models.User>;
-    private _matches: Map<string, Models.Match>;
-    private _players: Array<Player>;
 
     uiSocketManager: UIWebSocketManager;
     relayServer: WebSocketServer;
     taClient: Client;
+    gameController: Game;
 
     constructor({ taUrl, relayPort }) {
         this.relayServer = new WebSocketServer({ port: relayPort });
@@ -21,9 +19,7 @@ export default class RelayManager {
             options: { autoReconnect: true, autoReconnectInterval: 1000 }
         });
         this.uiSocketManager = new UIWebSocketManager(new WebSocket(`ws://localhost:${relayPort}`));
-        this._users = new Map();
-        this._matches = new Map();
-        this._players = [];
+        this.gameController = new Game(this.uiSocketManager);
 
         this.relayServer.on("connection", socket => this.onRelayConnection(socket));
         this.taClient.on("packet", packet => this.onPacket(packet));
@@ -35,134 +31,58 @@ export default class RelayManager {
         this.taClient.on("matchUpdated", match => this.onMatchUpdated(match));
         this.taClient.on("matchDeleted", match => this.onMatchDeleted(match));
         this.taClient.on("error", e => { throw e; });
-        this.heartbeat();
-    }
-
-    get players() {
-        return this._players;
-    }
-
-    get users(): Map<string, Models.User> {
-        return this._users;
-    }
-
-    set players(players: Array<Player>) {
-        this._players = players;
-        this.uiSocketManager.sendToUI(6, { players: this._players })
-    }
-
-    set users(usersMap: Map<string, Models.User>) {
-        this._users = usersMap;
-        const users = Array.from(usersMap.values());
-        this.players = users.filter(user => user.client_type === Models.User.ClientTypes.Player)
-            .map(user => ({
-                name: user.name,
-                type: user.client_type,
-                user_id: user.user_id,
-                guid: user.guid,
-                stream_delay_ms: user.stream_delay_ms,
-                stream_sync_start_ms: user.stream_sync_start_ms,
-            }))
-            .sort((ua, ub) => ua.user_id > ub.user_id ? 1 : -1);
-    }
-
-    get matches() {
-        return this._matches;
-    }
-
-    set matches(matches: Map<string, Models.Match>) {
-        const ms = Array.from(matches.values()).map(m => m.toObject());
-
-        this._matches = matches;
-        this.uiSocketManager.sendToUI(3, { matches: ms });
+        //this.heartbeat();
     }
 
     onUserAdded(recv: TAEvents.PacketEvent<Models.User>) {
         if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserAdded`);
 
-        const player = recv.data;
-        this.users.set(player.guid, player);
-        this.users = new Map(this.users);
+        this.gameController.updateUser(recv.data);
     }
 
     onUserUpdated(recv: TAEvents.PacketEvent<Models.User>) {
         if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserUpdated`);
 
-        this.users.set(recv.data.guid, recv.data);
-        this.users = new Map(this.users);
+        this.gameController.updateUser(recv.data);
     }
 
     onUserLeft(recv: TAEvents.PacketEvent<Models.User>) {
         if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserLeft`);
 
-        this.users.delete(recv.data.guid);
-        this.users = new Map(this.users);
+        this.gameController.removeUser(recv.data);
     }
 
     onRealtimeScore(recv: TAEvents.PacketEvent<Packets.Push.RealtimeScore>) {
         logger.debug(`onRealtimeScore`);
 
-        const packet = recv.data;
-        const packetScore = {
-            user_id: this.users.get(packet.user_guid)?.user_id,
-            score: packet.score,
-            accuracy: packet.accuracy,
-            combo: packet.combo,
-            notesMissed: packet.scoreTracker.notesMissed,
-            badCuts: packet.scoreTracker.badCuts,
-            bombHits: packet.scoreTracker.bombHits,
-            wallHits: packet.scoreTracker.wallHits,
-            maxCombo: packet.scoreTracker.maxCombo,
-            lhAvg: packet.scoreTracker.leftHand.avgCut,
-            lhBadCut: packet.scoreTracker.leftHand.badCut,
-            lhHits: packet.scoreTracker.leftHand.hit,
-            lhMiss: packet.scoreTracker.leftHand.miss,
-            rhAvg: packet.scoreTracker.rightHand.avgCut,
-            rhBadCut: packet.scoreTracker.rightHand.badCut,
-            rhHits: packet.scoreTracker.rightHand.hit,
-            rhMiss: packet.scoreTracker.rightHand.miss,
-            totalMisses: packet.scoreTracker.notesMissed + packet.scoreTracker.badCuts,
-        };
-
-        const delay = this.users.get(packet.user_guid)?.stream_delay_ms ?? 0;
-        setTimeout(() => {
-            this.uiSocketManager.sendToUI(4, packetScore);
-        }, delay + 1);
+        this.gameController.updateScore(recv.data);
     }
 
     onMatchCreated(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchCreated`);
 
-        const users = match.data.associated_users;
-
-        users.push(this.taClient.Self.guid);
+        match.data.associated_users.push(this.taClient.Self.guid);
         this.taClient.updateMatch(match.data);
 
-        // todo: support for more than 2 players
-
-        this.updateMatch(match);
-
-        this.taClient.ServerSettings.score_update_frequency = 175;
+        this.gameController.updateMatch(match.data);
+        this.taClient.ServerSettings.score_update_frequency = 150;
     }
 
     onMatchUpdated(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchUpdated`);
-        this.updateMatch(match);
+        this.gameController.updateMatch(match.data);
     }
 
     onMatchDeleted(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchDeleted`);
-        this.matches.delete(match.data.guid);
-        this.matches = new Map(this.matches);
     }
 
     updateMatch(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`updateMatch`);
-        this.matches.set(match.data.guid, match.data);
-        this.matches = new Map(this.matches);
+        this.gameController.updateMatch(match.data);
     }
 
     onPacket(packet: Packets.Packet) {
@@ -174,25 +94,17 @@ export default class RelayManager {
             throw new Error("Connection was not successful");
         }
 
-        const players = this.taClient.Players.map(p => ({
-            name: p.name,
-            type: p.client_type,
-            user_id: p.user_id,
-            guid: p.guid,
-            stream_delay_ms: p.stream_delay_ms,
-            stream_sync_start_ms: p.stream_sync_start_ms
-        }));
+        const users = new Map();
+        for (const user of this.taClient.users) {
+            users.set(user.guid, user);
+        }
 
-        if (this.players.length > 0) {
-            logger.debug("Got packet and overwritten players", players);
-        };
-
-        this.players = players;
+        this.gameController.updateUsers(users);
     }
 
 
     onRelayConnection(socket: WebSocket) {
-        this.uiSocketManager.sendToUI(0, { message: "Connected to relay server" });
+        this.uiSocketManager.sendToUI("on-connection", { message: "Connected to relay server" });
         logger.debug(`${socket.url} connected`);
 
         socket.on('message', (data, isBinary) => {
@@ -205,12 +117,12 @@ export default class RelayManager {
     }
     
 
-    heartbeat() {
+    /*heartbeat() {
         setInterval(() => this.uiSocketManager.sendToUI(1, {
             players: this.players,
             matches: Array.from(this.matches.values()).map(m => m.toObject()),
         }), 5000);
-    }
+    }*/
 
     isPlayerOrCoordinator(user: Models.User) {
         return user.client_type == Models.User.ClientTypes.Coordinator ||
