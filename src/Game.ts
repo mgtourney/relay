@@ -49,13 +49,19 @@ export default class Game {
         this.currentMatch = "";
     }
 
+    getCurrentMatchPlayers(): PlayerUser[] {
+        const playerGuids = this.matches.get(this.currentMatch)?.associated_users ?? [];
+        return playerGuids.map(guid => this.playerUsers.find(u => u.guid === guid)).filter(Boolean) as PlayerUser[];
+    }
+
     onGameStateUpdate() {
+        const players = this.getCurrentMatchPlayers();
         this.uiSocket.sendToUI("game-state-update", { 
             match: this.matches.get(this.currentMatch)?.toObject(),
-            players: this.playerUsers,
+            players,
         });
 
-        const ids = this.playerUsers.map(p => p.user_id);
+        const ids = players.map(p => p.user_id);
         this.updateScoresabers(ids).then(scoresabers => {
             console.log(scoresabers);
             this.uiSocket.sendToUI("on-scoresaber-update", { scoresabers });
