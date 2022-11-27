@@ -20,6 +20,12 @@ export default class UIWebSocketManager {
                     rightLead: data.rightLead,
                 });
                 break;
+            case "update-twitch":
+                this.sendToUI("twitch-update", {
+                    leftTwitch: data.leftTwitch,
+                    rightTwitch: data.rightTwitch,
+                });
+                break;
         }
     }
     
