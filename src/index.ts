@@ -8,6 +8,10 @@ if (!process.env.TA_URL) {
     throw new Error("TA_URL not set");
 }
 
+if (!process.env.RELAY_HOST) {
+    throw new Error("RELAY_HOST not set");
+}
+
 if (!process.env.RELAY_PORT) {
     throw new Error("RELAY_PORT not set");
 }
@@ -39,7 +43,7 @@ if (process.env.DOCKER) {
     });
 }
 
-logger.info(`Starting relay server on ws://127.0.0.1:${process.env.RELAY_PORT}`);
+logger.info(`Starting relay server on ws://${process.env.RELAY_HOST}:${process.env.RELAY_PORT}`);
 
 const relay = new RelayManager({
     taUrl: process.env.TA_URL,

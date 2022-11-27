@@ -15,7 +15,7 @@ export default class RelayManager {
     taClient: Client;
 
     constructor({ taUrl, relayPort }) {
-        this.relayServer = new WebSocketServer({ port: relayPort });
+        this.relayServer = new WebSocketServer({ host: process.env.RELAY_HOST, port: relayPort });
         this.taClient = new Client("Relay", {
             url: taUrl,
             options: { autoReconnect: true, autoReconnectInterval: 1000 }
@@ -202,7 +202,7 @@ export default class RelayManager {
             });
         });
     }
-    
+
 
     heartbeat() {
         setInterval(() => this.uiSocketManager.sendToUI(1, {
