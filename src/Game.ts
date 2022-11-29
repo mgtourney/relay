@@ -1,6 +1,6 @@
 import { Client, Models, Packets, TAEvents } from "tournament-assistant-client";
 import UIWebSocketManager from "./UIWebSocketManager";
-import fetch from "node-fetch";
+import axios from 'axios';
 
 interface PlayerUser {
     name: string,
@@ -56,7 +56,7 @@ export default class Game {
 
     onGameStateUpdate() {
         const players = this.getCurrentMatchPlayers();
-        this.uiSocket.sendToUI("game-state-update", { 
+        this.uiSocket.sendToUI("game-state-update", {
             match: this.matches.get(this.currentMatch)?.toObject(),
             players,
         });
@@ -71,12 +71,12 @@ export default class Game {
     onScoreUpdate(score: PlayerScore) {
         const delay = this.users.get(score?.user_guid)?.stream_delay_ms ?? 0;
         setTimeout(() => {
-            this.uiSocket.sendToUI("score-update", { 
+            this.uiSocket.sendToUI("score-update", {
                 scores: Object.fromEntries(this.scores),
             });
         }, delay + 1);
     }
-    
+
     updateUsers(users: Map<string, Models.User>) {
         this.users = users;
         this.onGameStateUpdate();
@@ -142,7 +142,7 @@ export default class Game {
             }));
     }
 
-    
+
     async updateScoresabers(ids: string[]) {
         for (const player of ids) {
             if (this.scoresabers[player] == null) {
@@ -154,20 +154,18 @@ export default class Game {
     }
 
 
-    async getScoresaber(playerId: string): Promise<any> {
+    async getScoresaber(playerId: string): Promise<JSON | null> {
         try {
-            const response = await fetch(`https://scoresaber.com/api/player/${playerId}/full`);
+            const response = await axios.get(`https://scoresaber.com/api/player/${playerId}/full`);
             if (response.status === 404) {
-                return {};
+                return null;
             }
 
-            return await response.json();
+            return JSON.parse(response.data);
         } catch (e) {
             console.error(e);
             await new Promise((resolve) => setTimeout(resolve, 1000));
             return await this.getScoresaber(playerId);
         }
     }
-
-
 }
