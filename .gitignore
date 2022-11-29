@@ -134,3 +134,4 @@ dist
 
 # NodeJS
 package-lock.json
+yarn.lock
