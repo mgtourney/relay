@@ -1,5 +1,4 @@
 import { WebSocket, RawData } from "ws";
-import fetch from "node-fetch";
 
 export default class UIWebSocketManager {
 
@@ -13,7 +12,7 @@ export default class UIWebSocketManager {
     onMessage(message: RawData) {
         const data = JSON.parse(message.toString());
 
-        switch(data.command) {
+        switch (data.command) {
             case "update-lead":
                 this.sendToUI("lead-update", {
                     leftLead: data.leftLead,
@@ -28,7 +27,7 @@ export default class UIWebSocketManager {
                 break;
         }
     }
-    
+
 
     sendToUI(type: string, data: Array<any> | object) {
         if (this.socket.readyState === WebSocket.OPEN) {
