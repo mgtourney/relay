@@ -21,10 +21,10 @@ RUN tsc
 FROM node:16-alpine
 
 # Set default environment variables
-ENV TA_URL=ws://tournamentassistant.net:2053
-ENV RELAY_PORT=2053
-
-ENV DOCKER=true
+ENV TA_URI=ws://tournamentassistant.net:2053
+ENV HOST=0.0.0.0
+ENV PORT=2223
+ENV DOCKER=true 
 
 # Expose ports
 EXPOSE 2053
