@@ -1,9 +1,13 @@
-import { Client, Models, Packets, TAEvents } from "tournament-assistant-client";
-import { WebSocket, WebSocketServer } from "ws";
-import Player from "./types/Player";
-import UIWebSocketManager from "./UIWebSocketManager";
-import { logger } from '.';
-import Game from "./Game";
+import Game from './Game.js';
+import UIWebSocketManager from './UIWebSocket.js';
+import {
+    Client,
+    Models,
+    Packets,
+    TAEvents
+} from 'tournament-assistant-client';
+import { logger } from '../index.js';
+import { WebSocket, WebSocketServer } from 'ws';
 
 export default class RelayManager {
 

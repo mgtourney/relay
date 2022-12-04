@@ -1,4 +1,4 @@
-import { WebSocket, RawData } from "ws";
+import { RawData, WebSocket } from 'ws';
 
 export default class UIWebSocketManager {
 
