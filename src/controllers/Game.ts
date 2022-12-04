@@ -40,9 +40,8 @@ export default class Game {
 
         const ids = players.map(p => p.user_id);
 
-        await this.updateScoresabers(ids).then(scoresabers => {
-            this.uiSocket.sendToUI("on-scoresaber-update", { scoresabers });
-        });
+        const scoresabers = await this.updateScoresabers(ids)
+        this.uiSocket.sendToUI("on-scoresaber-update", { scoresabers });
     }
 
     onScoreUpdate(score: TAScore) {
@@ -134,14 +133,12 @@ export default class Game {
     async getScoresaber(playerId: string): Promise<ScoreSaberPlayerInfo | null> {
         try {
             const response = await got.get(`https://scoresaber.com/api/player/${playerId}/full`);
-            switch (response.statusCode) {
-                case 200:
-                    return JSON.parse(response.body) as ScoreSaberPlayerInfo;
-                case 404:
-                    return null;
-                default:
-                    return null;
+            if (response.statusCode === 404) {
+                return null;
             }
+
+            // response OK
+            return JSON.parse(response.body) as ScoreSaberPlayerInfo;
         } catch (e) {
             logger.warn(`Failed to get scoresaber info for ${playerId}, retrying...`);
 
@@ -151,7 +148,7 @@ export default class Game {
                 try {
                     return await this.getScoresaber(playerId);
                 } catch (e) {
-                    logger.warn(`Failed to get scoresaber info for player ${playerId} on attempt ${attempts}/3: ${e as string}`);
+                    logger.warn(`Failed to get scoresaber info for player ${playerId} on attempt ${attempts}/3: ${(e as Error).message}`);
                     continue;
                 }
             }

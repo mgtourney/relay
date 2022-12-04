@@ -2,7 +2,7 @@
   "name": "relay",
   "type": "module",
   "engines": {
-    "node": ">=14.16"
+    "node": ">=16.0"
   },
   "exports": "./dist/index.js",
   "scripts": {
