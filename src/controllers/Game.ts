@@ -1,35 +1,29 @@
 import got from 'got';
-import UIWebSocketManager from './UIWebSocket.js';
+import UIWebSocket from './UIWebSocket.js';
 import {
-    Client,
     Models,
     Packets,
-    TAEvents
 } from 'tournament-assistant-client';
-import { logger } from '../index.js';
+import { logger } from '../main.js';
 import { ScoreSaberPlayerInfo } from '../types/ScoreSaber.js';
 import { TAPlayerInfo, TAScore } from '../types/TA.js';
 
+// ? Early deprecation notice: This class will be refactored out in favor of the TA Client's State object.
+// ? Perferably, we will have our own StateController class that will handle all of *our* state management.
 export default class Game {
 
     users: Map<string, Models.User>;
     matches: Map<string, Models.Match>;
     scores: Map<string, TAScore>;
     currentMatch: string;
-    scoresabers: Map<string, any>;
+    scoresabers: Map<string, unknown>;
 
-    constructor(private uiSocket: UIWebSocketManager) {
+    constructor(private uiSocket: UIWebSocket) {
         this.users = new Map();
         this.matches = new Map();
         this.scores = new Map();
         this.scoresabers = new Map();
         this.currentMatch = "";
-
-        (async () => {
-            this.getScoresaber("76561198347791418").then(scoresaber => {
-                console.log(scoresaber?.name);
-            });
-        })();
     }
 
     getCurrentMatchPlayers(): TAPlayerInfo[] {
@@ -37,7 +31,7 @@ export default class Game {
         return playerGuids.map(guid => this.playerUsers.find(u => u.guid === guid)).filter(Boolean) as TAPlayerInfo[];
     }
 
-    onGameStateUpdate() {
+    async onGameStateUpdate() {
         const players = this.getCurrentMatchPlayers();
         this.uiSocket.sendToUI("game-state-update", {
             match: this.matches.get(this.currentMatch)?.toObject(),
@@ -45,8 +39,8 @@ export default class Game {
         });
 
         const ids = players.map(p => p.user_id);
-        this.updateScoresabers(ids).then(scoresabers => {
 
+        await this.updateScoresabers(ids).then(scoresabers => {
             this.uiSocket.sendToUI("on-scoresaber-update", { scoresabers });
         });
     }
@@ -60,25 +54,25 @@ export default class Game {
         }, delay + 1);
     }
 
-    updateUsers(users: Map<string, Models.User>) {
+    async updateUsers(users: Map<string, Models.User>) {
         this.users = users;
-        this.onGameStateUpdate();
+        await this.onGameStateUpdate();
     }
 
-    updateMatches(matches: Map<string, Models.Match>) {
+    async updateMatches(matches: Map<string, Models.Match>) {
         this.matches = matches;
-        this.onGameStateUpdate();
+        await this.onGameStateUpdate();
     }
 
-    updateUser(user: Models.User) {
+    async updateUser(user: Models.User) {
         this.users.set(user.guid, user);
-        this.onGameStateUpdate();
+        await this.onGameStateUpdate();
     }
 
-    updateMatch(match: Models.Match) {
+    async updateMatch(match: Models.Match) {
         this.matches.set(match.guid, match);
         this.currentMatch = match.guid;
-        this.onGameStateUpdate();
+        await this.onGameStateUpdate();
     }
 
     updateScore(score: Packets.Push.RealtimeScore) {
@@ -106,9 +100,9 @@ export default class Game {
         this.onScoreUpdate(this.scores.get(this.users.get(score.user_guid)?.user_id ?? "") as TAScore);
     }
 
-    removeUser(user: Models.User) {
+    async removeUser(user: Models.User) {
         this.users.delete(user.guid);
-        this.onGameStateUpdate();
+        await this.onGameStateUpdate();
     }
 
     get playerUsers(): TAPlayerInfo[] {
@@ -139,7 +133,7 @@ export default class Game {
 
     async getScoresaber(playerId: string): Promise<ScoreSaberPlayerInfo | null> {
         try {
-            let response = await got.get(`https://scoresaber.com/api/player/${playerId}/full`);
+            const response = await got.get(`https://scoresaber.com/api/player/${playerId}/full`);
             switch (response.statusCode) {
                 case 200:
                     return JSON.parse(response.body) as ScoreSaberPlayerInfo;
@@ -157,7 +151,7 @@ export default class Game {
                 try {
                     return await this.getScoresaber(playerId);
                 } catch (e) {
-                    logger.warn(`Failed to get scoresaber info for player ${playerId} on attempt ${attempts}/3: ${e}`);
+                    logger.warn(`Failed to get scoresaber info for player ${playerId} on attempt ${attempts}/3: ${e as string}`);
                     continue;
                 }
             }

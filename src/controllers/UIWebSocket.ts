@@ -1,8 +1,8 @@
 import { RawData, WebSocket } from 'ws';
 
-export default class UIWebSocketManager {
+export default class UIWebSocket {
 
-    scoresabers: any;
+    scoresabers: object;
 
     constructor(private socket: WebSocket) {
         this.socket.on("message", message => this.onMessage(message));
@@ -29,7 +29,7 @@ export default class UIWebSocketManager {
     }
 
 
-    sendToUI(type: string, data: Array<any> | object) {
+    sendToUI(type: string, data: Array<unknown> | object) {
         if (this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify({ type, ...data }));
         }

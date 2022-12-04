@@ -1,31 +1,37 @@
 import Game from './Game.js';
-import UIWebSocketManager from './UIWebSocket.js';
+import UIWebSocket from './UIWebSocket.js';
 import {
     Client,
     Models,
     Packets,
     TAEvents
 } from 'tournament-assistant-client';
-import { logger } from '../index.js';
+import { logger } from '../main.js';
 import { WebSocket, WebSocketServer } from 'ws';
 
-export default class RelayManager {
+export default class Relay {
 
-    uiSocketManager: UIWebSocketManager;
+    uiSocketManager: UIWebSocket;
     relayServer: WebSocketServer;
     taClient: Client;
     gameController: Game;
 
-    constructor({ taUrl, relayPort }) {
+    constructor({ taUrl, relayPort }: { taUrl: string, relayPort: number }) {
         this.relayServer = new WebSocketServer({ host: process.env.RELAY_HOST, port: relayPort });
+        this.uiSocketManager = new UIWebSocket(new WebSocket(`ws://localhost:${relayPort}`));
+
+        this.gameController = new Game(this.uiSocketManager);
         this.taClient = new Client("Relay", {
             url: taUrl,
             options: { autoReconnect: true, autoReconnectInterval: 1000 }
         });
-        this.uiSocketManager = new UIWebSocketManager(new WebSocket(`ws://localhost:${relayPort}`));
-        this.gameController = new Game(this.uiSocketManager);
+
+        //! TODO: Refactor the entire game controller out, replacing it with taClient.State
+        //! Misc information like their scoresaber profile, etc. should be stored elsewhere.
+        //! - checksum 
 
         this.relayServer.on("connection", socket => this.onRelayConnection(socket));
+        this.taClient.on("taConnected", () => this.onTAConnected());
         this.taClient.on("packet", packet => this.onPacket(packet));
         this.taClient.on("userAdded", user => this.onUserAdded(user));
         this.taClient.on("userUpdated", user => this.onUserUpdated(user));
@@ -35,28 +41,33 @@ export default class RelayManager {
         this.taClient.on("matchUpdated", match => this.onMatchUpdated(match));
         this.taClient.on("matchDeleted", match => this.onMatchDeleted(match));
         this.taClient.on("error", e => { throw e; });
-        //this.heartbeat();
     }
 
-    onUserAdded(recv: TAEvents.PacketEvent<Models.User>) {
+    onTAConnected(): void {
+        logger.info(`Connected to Tournament Assistant`);
+        this.uiSocketManager.sendToUI("on-connection", { message: "Connected to Tournament Assistant" });
+    }
+
+    async onUserAdded(recv: TAEvents.PacketEvent<Models.User>) {
         if (!this.isPlayerOrCoordinator(recv.data)) return;
+
         logger.debug(`onUserAdded`);
 
-        this.gameController.updateUser(recv.data);
+        await this.gameController.updateUser(recv.data);
     }
 
-    onUserUpdated(recv: TAEvents.PacketEvent<Models.User>) {
+    async onUserUpdated(recv: TAEvents.PacketEvent<Models.User>) {
         if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserUpdated`);
 
-        this.gameController.updateUser(recv.data);
+        await this.gameController.updateUser(recv.data);
     }
 
-    onUserLeft(recv: TAEvents.PacketEvent<Models.User>) {
+    async onUserLeft(recv: TAEvents.PacketEvent<Models.User>) {
         if (!this.isPlayerOrCoordinator(recv.data)) return;
         logger.debug(`onUserLeft`);
 
-        this.gameController.removeUser(recv.data);
+        await this.gameController.removeUser(recv.data);
     }
 
     onRealtimeScore(recv: TAEvents.PacketEvent<Packets.Push.RealtimeScore>) {
@@ -65,31 +76,32 @@ export default class RelayManager {
         this.gameController.updateScore(recv.data);
     }
 
-    onMatchCreated(match: TAEvents.PacketEvent<Models.Match>) {
+    async onMatchCreated(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchCreated`);
 
         match.data.associated_users.push(this.taClient.Self.guid);
         this.taClient.updateMatch(match.data);
 
-        this.gameController.updateMatch(match.data);
+        await this.gameController.updateMatch(match.data);
         this.taClient.ServerSettings.score_update_frequency = 150;
     }
 
-    onMatchUpdated(match: TAEvents.PacketEvent<Models.Match>) {
+    async onMatchUpdated(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchUpdated`);
-        this.gameController.updateMatch(match.data);
+        await this.gameController.updateMatch(match.data);
     }
 
-    onMatchDeleted(match: TAEvents.PacketEvent<Models.Match>) {
+    onMatchDeleted(_match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`onMatchDeleted`);
+        // ? Do we need to do anything here?
     }
 
-    updateMatch(match: TAEvents.PacketEvent<Models.Match>) {
+    async updateMatch(match: TAEvents.PacketEvent<Models.Match>) {
         logger.debug(`updateMatch`);
-        this.gameController.updateMatch(match.data);
+        await this.gameController.updateMatch(match.data);
     }
 
-    onPacket(packet: Packets.Packet) {
+    async onPacket(packet: Packets.Packet) {
         if (!packet.has_response || !packet.response.has_connect) {
             return;
         }
@@ -98,12 +110,12 @@ export default class RelayManager {
             throw new Error("Connection was not successful");
         }
 
-        const users = new Map();
+        const users = new Map<string, Models.User>();
         for (const user of this.taClient.users) {
             users.set(user.guid, user);
         }
 
-        this.gameController.updateUsers(users);
+        await this.gameController.updateUsers(users);
     }
 
 
@@ -120,20 +132,12 @@ export default class RelayManager {
         });
     }
 
-
-    /*heartbeat() {
-        setInterval(() => this.uiSocketManager.sendToUI(1, {
-            players: this.players,
-            matches: Array.from(this.matches.values()).map(m => m.toObject()),
-        }), 5000);
-    }*/
-
     isPlayerOrCoordinator(user: Models.User) {
         return user.client_type == Models.User.ClientTypes.Coordinator ||
             user.client_type == Models.User.ClientTypes.Player;
     }
 
-    async shutdown() {
+    shutdown() {
         logger.warn("Shutting down...");
 
         try {
