@@ -14,13 +14,13 @@ docker run -p 2053:2053 chksm/relay:latest
 
 This will start the relay server on port 2053 connecting to the default TournamentAssistant server.
 
-
 ## Environment Variables 🌎
 
-| Variable     | Description                                       | Default                             |
-| ------------ | ------------------------------------------------- | ----------------------------------- |
-| `RELAY_PORT` | Internal port to listen on for relay connections. | `2053`                              |
-| `TA_URL`     | Websocket URL for TournamentAssistant.            | `ws://tournamentassistant.net:2053` |
+| Variable | Description                                       | Default                             |
+| -------- | ------------------------------------------------- | ----------------------------------- |
+| `HOST`   | Bind address for the relay server.                | `127.0.0.1`                         |
+| `PORT`   | Internal port to listen on for relay connections. | `2053`                              |
+| `TA_URI` | Websocket URL for TournamentAssistant.            | `ws://tournamentassistant.net:2053` |
 
 ## Credits 🙏
 
