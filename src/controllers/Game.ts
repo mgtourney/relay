@@ -1,43 +1,20 @@
-import { Client, Models, Packets, TAEvents } from "tournament-assistant-client";
-import UIWebSocketManager from "./UIWebSocketManager";
-import axios from 'axios';
-
-interface PlayerUser {
-    name: string,
-    type: Models.User.ClientTypes,
-    user_id: string,
-    guid: string,
-    stream_delay_ms: number,
-    stream_sync_start_ms: number,
-}
-
-interface PlayerScore {
-    user_id: string | undefined
-    user_guid: string
-    score: number
-    accuracy: number
-    combo: number
-    notesMissed: number
-    badCuts: number
-    bombHits: number
-    wallHits: number
-    maxCombo: number
-    lhAvg: number[]
-    lhBadCut: number
-    lhHits: number
-    lhMiss: number
-    rhAvg: number[]
-    rhBadCut: number
-    rhHits: number
-    rhMiss: number
-    totalMisses: number
-}
+import got from 'got';
+import UIWebSocketManager from './UIWebSocket.js';
+import {
+    Client,
+    Models,
+    Packets,
+    TAEvents
+} from 'tournament-assistant-client';
+import { logger } from '../index.js';
+import { ScoreSaberPlayerInfo } from '../types/ScoreSaber.js';
+import { TAPlayerInfo, TAScore } from '../types/TA.js';
 
 export default class Game {
 
     users: Map<string, Models.User>;
     matches: Map<string, Models.Match>;
-    scores: Map<string, PlayerScore>;
+    scores: Map<string, TAScore>;
     currentMatch: string;
     scoresabers: Map<string, any>;
 
@@ -47,11 +24,17 @@ export default class Game {
         this.scores = new Map();
         this.scoresabers = new Map();
         this.currentMatch = "";
+
+        (async () => {
+            this.getScoresaber("76561198347791418").then(scoresaber => {
+                console.log(scoresaber?.name);
+            });
+        })();
     }
 
-    getCurrentMatchPlayers(): PlayerUser[] {
+    getCurrentMatchPlayers(): TAPlayerInfo[] {
         const playerGuids = this.matches.get(this.currentMatch)?.associated_users ?? [];
-        return playerGuids.map(guid => this.playerUsers.find(u => u.guid === guid)).filter(Boolean) as PlayerUser[];
+        return playerGuids.map(guid => this.playerUsers.find(u => u.guid === guid)).filter(Boolean) as TAPlayerInfo[];
     }
 
     onGameStateUpdate() {
@@ -63,12 +46,12 @@ export default class Game {
 
         const ids = players.map(p => p.user_id);
         this.updateScoresabers(ids).then(scoresabers => {
-            console.log(scoresabers);
+
             this.uiSocket.sendToUI("on-scoresaber-update", { scoresabers });
         });
     }
 
-    onScoreUpdate(score: PlayerScore) {
+    onScoreUpdate(score: TAScore) {
         const delay = this.users.get(score?.user_guid)?.stream_delay_ms ?? 0;
         setTimeout(() => {
             this.uiSocket.sendToUI("score-update", {
@@ -120,7 +103,7 @@ export default class Game {
             rhMiss: score.scoreTracker.rightHand.miss,
             totalMisses: score.scoreTracker.notesMissed + score.scoreTracker.badCuts,
         });
-        this.onScoreUpdate(this.scores.get(this.users.get(score.user_guid)?.user_id ?? "") as PlayerScore);
+        this.onScoreUpdate(this.scores.get(this.users.get(score.user_guid)?.user_id ?? "") as TAScore);
     }
 
     removeUser(user: Models.User) {
@@ -128,7 +111,7 @@ export default class Game {
         this.onGameStateUpdate();
     }
 
-    get playerUsers(): PlayerUser[] {
+    get playerUsers(): TAPlayerInfo[] {
         return Array.from(this.users.values())
             .filter(user => user.client_type === Models.User.ClientTypes.Player)
             .sort((a, b) => a.user_id > b.user_id ? 1 : -1)
@@ -154,18 +137,33 @@ export default class Game {
     }
 
 
-    async getScoresaber(playerId: string): Promise<JSON | null> {
+    async getScoresaber(playerId: string): Promise<ScoreSaberPlayerInfo | null> {
         try {
-            const response = await axios.get(`https://scoresaber.com/api/player/${playerId}/full`);
-            if (response.status === 404) {
-                return null;
+            let response = await got.get(`https://scoresaber.com/api/player/${playerId}/full`);
+            switch (response.statusCode) {
+                case 200:
+                    return JSON.parse(response.body) as ScoreSaberPlayerInfo;
+                case 404:
+                    return null;
+                default:
+                    return null;
+            }
+        } catch (e) {
+            logger.warn(`Failed to get scoresaber info for ${playerId}, retrying...`);
+
+            let attempts = 0;
+            while (attempts < 3) {
+                attempts++;
+                try {
+                    return await this.getScoresaber(playerId);
+                } catch (e) {
+                    logger.warn(`Failed to get scoresaber info for player ${playerId} on attempt ${attempts}/3: ${e}`);
+                    continue;
+                }
             }
 
-            return JSON.parse(response.data);
-        } catch (e) {
-            console.error(e);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            return await this.getScoresaber(playerId);
+            logger.error(`Failed to get scoresaber info for player ${playerId} after 3 attempts, giving up and returning null`);
+            return null;
         }
     }
 }
