@@ -11,7 +11,7 @@ const ENV_VARS = [
 export function validateConfig() {
     for (const envVar of ENV_VARS) {
         if (!process.env[envVar]) {
-            logger.error(`Missing required environment variable ${envVar}`);
+            console.error(`Missing required environment variable ${envVar}`);
             process.exit(1);
         }
     }
