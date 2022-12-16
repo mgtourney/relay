@@ -19,10 +19,10 @@ export default class UIWebSocket {
                     rightLead: data.rightLead,
                 });
                 break;
-            case "update-twitch":
-                this.sendToUI("twitch-update", {
-                    leftTwitch: data.leftTwitch,
-                    rightTwitch: data.rightTwitch,
+            case "view-update":
+                console.log("ahdjk")
+                this.sendToUI("view-update", {
+                    viewMode: data.viewMode,
                 });
                 break;
         }
