@@ -6,6 +6,7 @@
   },
   "exports": "./dist/index.js",
   "scripts": {
+    "start": "npm run start_linux",
     "start_linux": "rm -rf ./dist && tsc && node ./dist/main.js",
     "start_win": "del /s /q dist && tsc && node ./dist/main.js"
   },
