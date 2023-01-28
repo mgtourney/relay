@@ -25,6 +25,16 @@ export default class UIWebSocket {
                     viewMode: data.viewMode,
                 });
                 break;
+            case "update-countdown":
+                this.sendToUI("update-countdown", {
+                    counting: data.status,
+                });
+                break;
+            case "update-time-left":
+                this.sendToUI("update-time-left", {
+                    timeLeft: data.timeLeft,
+                });
+                break;
         }
     }
 
