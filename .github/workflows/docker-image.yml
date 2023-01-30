@@ -33,7 +33,7 @@ jobs:
 
       - if: github.ref == 'refs/heads/dev'
         name: Build and push dev image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64
@@ -46,7 +46,7 @@ jobs:
 
       - if: github.ref == 'refs/heads/prod'
         name: Build and push prod image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64
