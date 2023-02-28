@@ -18,7 +18,7 @@ RUN tsc
 
 # Now we have a compiled version of the project in the dist folder,
 # we can now create a new image with only the compiled javascript
-FROM node:16-alpine
+FROM node:19-alpine
 
 # Set default environment variables
 ENV TA_URI=ws://tournamentassistant.net:2053
